@@ -4,11 +4,15 @@ const port = 3000;
 const db = require("./db");
 app.use(express.json());
 
+
 //ルーティング
-app.get("/",(req,res) => {
+app.get("/users",(req,res) => {
     res.json({
-         message: "hello, world!",
-        massage2: "hello world! 3"
+         message: "GET/users 実行されました",
+       users:[
+        {id: 1, name: "satou"},
+        {id: 2, name: "tanaka"}
+       ]
     });
 });
 
@@ -23,7 +27,7 @@ app.get("/posts",(req,res) => {
 app.post("/posts",(req,res)=> {
 // TODOポストの作業処理を書く
 
-db.run("INSERT INTO posts(title,content)VALUES('moji','moji2')",(err) => (
+db.run("INSERT INTO posts(title,content)VALUES('satou','tanaka')",(err) => (
     console.log(err)
 ));
 res.json({
@@ -31,6 +35,11 @@ res.json({
    });
    
 });
+
+// TODO GET /users POST /users
+
+
+
 //起動
 app.listen(port, () => {
     console.log("start server");
