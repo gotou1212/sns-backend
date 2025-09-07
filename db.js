@@ -14,11 +14,18 @@ const CREATE_POSTS_TABLE = `
    content TEXT NOT NULL
  );
 `;
-   
+
+const CREATE_USERS_TABLE =`
+CREATE TABLE IF NOT EXISTS users(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT
+)
+`
 
 db.serialize(() => {
     db.run(INITALIZE_SQL)
     db.run(CREATE_POSTS_TABLE);
+    db.run(CREATE_USERS_TABLE);
 });
 
 module.exports = db;
