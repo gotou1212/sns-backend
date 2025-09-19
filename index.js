@@ -6,26 +6,18 @@ app.use(express.json());
 
 
 //ルーティング
-//ここをSELECTで直す
-app.get("/users",(req,res) => {
-    res.json({
-       message: "GET/users 実行されました",
-       users:[
-           {id: 1, name: "satou"},
-        {id: 2, name: "tanaka"}
-       ]
+app.get("/users", (req, res) => {
+    db.all("SELECT * FROM users", (err, rows) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: "Internal Server Error" });
+            return;
+        }
+        res.json({
+            message: "GET /users 実行されました",
+            users: rows
+        });
     });
-});
-app.post("/users",(req,res) => {
-  console.log(req)
-
-  res.json() 
-});
-app.get("/posts",(req,res) => {
-    db.all("SELECT * FROM posts",(err,rows) => {
-       console.log(err)
-       console.log(rows)
-    })
 });
 
 app.post("/posts",(req,res)=> {
