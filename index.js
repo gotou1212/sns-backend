@@ -6,20 +6,23 @@ app.use(express.json());
 
 
 //ルーティング
-app.get("/users", (req, res) => {
+app.get("/posts", (req, res) => {
     db.all("SELECT * FROM users", (err, rows) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Internal Server Error" });
             return;
         }
-        res.json({
-            message: "GET /users 実行されました",
-            users: rows
-        });
+        res.json(rows);
     });
 });
 
+app.post("/users", (req,res) => {
+    console.log("test");
+    db.run("INSERT INTO users(username) VALUES('satousan')",(err) => (
+        console.log(err)
+    ))
+});
 app.post("/posts",(req,res)=> {
 // TODOポストの作業処理を書く
     db.run("INSERT INTO posts(title,content)VALUES('satou','tanaka')",(err) => (
