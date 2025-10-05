@@ -4,12 +4,13 @@ const port = 3000;
 const db = require("./db");
 const cors = require("cors");
 
+
 app.use(express.json());
 app.use(cors());
 
 //ルーティング
 app.get("/posts", (req, res) => {
-    db.all("SELECT * FROM users", (err, rows) => {
+    db.all("SELECT * FROM posts", (err, rows) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Internal Server Error" });
