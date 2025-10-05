@@ -2,8 +2,10 @@ const express = require("express");
 const app = express();
 const port = 3000;
 const db = require("./db");
-app.use(express.json());
+const cors = require("cors");
 
+app.use(express.json());
+app.use(cors());
 
 //ルーティング
 app.get("/posts", (req, res) => {
