@@ -26,11 +26,18 @@ app.post("/users", (req,res) => {
         console.log(err)
     ))
 });
+
 app.post("/posts",(req,res)=> {
-// TODOポストの作業処理を書く
-    db.run("INSERT INTO posts(title,content)VALUES('satou','tanaka')",(err) => (
+   const { title,content } = req.body;
+
+    const createPostData = {
+        title: title,
+        content: content
+    }
+    db.run("INSERT INTO posts(title,content)VALUES('?','?')",[createPostData.title,createPostData.content],(err) => (
         console.log(err)
     ));
+
     res.json({
         message: "作成しました"
    });
