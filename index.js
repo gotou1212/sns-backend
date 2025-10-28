@@ -34,7 +34,7 @@ app.post("/posts",(req,res)=> {
         title: title,
         content: content
     }
-    db.run("INSERT INTO posts(title,content)VALUES('?','?')",[createPostData.title,createPostData.content],(err) => (
+    db.run("INSERT INTO posts(title,content)VALUES(?,?)",[createPostData.title,createPostData.content],(err) => (
         console.log(err)
     ));
 
