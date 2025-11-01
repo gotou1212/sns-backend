@@ -3,12 +3,27 @@ const app = express();
 const port = 3000;
 const db = require("./db");
 const cors = require("cors");
-
+const jwt = require("jsonwebtoken")
 
 app.use(express.json());
 app.use(cors());
 
+const SECRET_KEY = "secret"
+
 //ルーティング
+app.post("/login",(req,res) => {
+    
+    const { username,password } = req.body;
+
+    if (username === "admin" && password === "password"){
+        return res.json({
+            token: "token"
+        })
+    } else {
+        return res.status(401).json({ error: "Error" });
+    }
+});
+
 app.get("/posts", (req, res) => {
     db.all("SELECT * FROM posts", (err, rows) => {
         if (err) {
