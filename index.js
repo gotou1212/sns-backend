@@ -23,7 +23,7 @@ app.post("/login",(req,res) => {
         return res.status(401).json({ error: "Error" });
     }
 });
-
+//投稿一覧取得API
 app.get("/posts", (req, res) => {
     db.all("SELECT * FROM posts", (err, rows) => {
         if (err) {
@@ -41,7 +41,7 @@ app.post("/users", (req,res) => {
         console.log(err)
     ))
 });
-
+//投稿作成API
 app.post("/posts",(req,res)=> {
    const { title,content } = req.body;
 
@@ -52,12 +52,19 @@ app.post("/posts",(req,res)=> {
     db.run("INSERT INTO posts(title,content)VALUES(?,?)",[createPostData.title,createPostData.content],(err) => (
         console.log(err)
     ));
-
+//投稿削除API
     res.json({
         message: "作成しました"
    });
 });
+//投稿削除API
+//　posts/1
+app.delete("/posts/:id",(req,res) => {
+    const postId = req.params.id;
 
+    db.run("DELETE FROM posts WHERE id = ?",[postId],(err) => {
+    })
+})
 //起動
 app.listen(port, () => {
     console.log("start server");
