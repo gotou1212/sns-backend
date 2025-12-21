@@ -64,6 +64,10 @@ app.delete("/posts/:id",(req,res) => {
 
     db.run("DELETE FROM posts WHERE id = ?",[postId],(err) => {
     })
+
+    res.json({
+        message:"削除しました"
+    })
 })
 //起動
 app.listen(port, () => {
