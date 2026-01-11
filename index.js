@@ -11,6 +11,7 @@ app.use(cors());
 const SECRET_KEY = "secret"
 
 //ルーティング
+//ログインAPI
 app.post("/login",(req,res) => {
     
     const { username,password } = req.body;
@@ -23,6 +24,22 @@ app.post("/login",(req,res) => {
         return res.status(401).json({ error: "Error" });
     }
 });
+
+app.post("/register", (req,res) =>{
+    const {username, password} = req.body;
+
+    db.run("SELECT * FROM users WHERE username = ?",[username],(err,row) => {
+        console.log(row);
+        //abcde*
+        // 暗号化
+        // ユーザー登録
+        // トークン発行
+
+        return res.status(201).json({message: "success"});
+    });
+});
+//ユーザー登録API
+
 //投稿一覧取得API
 app.get("/posts", (req, res) => {
     db.all("SELECT * FROM posts", (err, rows) => {
