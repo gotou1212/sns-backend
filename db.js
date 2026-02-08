@@ -18,7 +18,8 @@ const CREATE_POSTS_TABLE = `
 const CREATE_USERS_TABLE =`
 CREATE TABLE IF NOT EXISTS users(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT
+  username TEXT,
+  password TEXT
 )
 `
 

@@ -4,7 +4,7 @@ const port = 3000;
 const db = require("./db");
 const cors = require("cors");
 const jwt = require("jsonwebtoken")
-
+const bcrypt =require("bcrypt");
 app.use(express.json());
 app.use(cors());
 
@@ -28,14 +28,24 @@ app.post("/login",(req,res) => {
 app.post("/register", (req,res) =>{
     const {username, password} = req.body;
 
-    db.run("SELECT * FROM users WHERE username = ?",[username],(err,row) => {
-        console.log(row);
-        //abcde*
-        // 暗号化
-        // ユーザー登録
-        // トークン発行
+    db.run("SELECT * FROM users WHERE username = ?",[username],async(err,row) => {
+        if(row){
+            return res.status(400).json({ error: "userが既に存在します"});
+        }
 
-        return res.status(201).json({message: "success"});
+        //const passwordHash = await bcrypt.hash(password,10);
+        // 暗号化
+        const hashePassword = await bcrypt.hash(password,10);
+        console.log(hashePassword);
+        // ユーザー登録
+        db.run("INSERT INTO users(username,password) VALUES(?,?)",[username,hashePassword],async (err) => {
+            if (err) return res.status(500).json({ error: "Server Error"});
+            
+            //トークン発行
+            const token =jwt.sign({ username },SECRET_KEY);
+
+            return res.status(201).json({ token });
+        });
     });
 });
 //ユーザー登録API
