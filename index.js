@@ -12,33 +12,33 @@ const SECRET_KEY = "secret"
 
 //ルーティング
 //ログインAPI
-app.post("/login",(req,res) => {
-    
+/*app.post("/login",(req,res) => {
     const { username,password } = req.body;
+    console.log(username);
 
-    if (username === "admin" && password === "password"){
-        return res.json({
-            token: "token"
-        })
-    } else {
-        return res.status(401).json({ error: "Error" });
-    }
-});
+        db.all("SELECT * FROM users WHERE username = ?", [username], async (err, rows) => {
+          if (rows.length == 0) {
+            return res.status(400)
+          }
+      
+          const user = rows[0];
+          console.log(user);
 
-app.post("/register", (req,res) =>{
-    const {username, password} = req.body;
-
+          //トークン発行
+        });
+      });
+   
     db.run("SELECT * FROM users WHERE username = ?",[username],async(err,row) => {
         if(row){
             return res.status(400).json({ error: "userが既に存在します"});
         }
 
-        //const passwordHash = await bcrypt.hash(password,10);
+        //const hashedpassword = await bcrypt.hash(password,10);
         // 暗号化
-        const hashePassword = await bcrypt.hash(password,10);
-        console.log(hashePassword);
+        const hashedPassword = await bcrypt.hash(password,10);
+        console.log(hashedPassword);
         // ユーザー登録
-        db.run("INSERT INTO users(username,password) VALUES(?,?)",[username,hashePassword],async (err) => {
+        db.run("INSERT INTO users(username,password) VALUES(?,?)",[username,hashedPassword],async (err) => {
             if (err) return res.status(500).json({ error: "Server Error"});
             
             //トークン発行
@@ -47,9 +47,26 @@ app.post("/register", (req,res) =>{
             return res.status(201).json({ token });
         });
     });
-});
+    */
 //ユーザー登録API
+app.post("/posts", async (req,res) => {
+    const { username, password } = req.body;
 
+    db.run("SELECT * FROM users WHERE username = ?", [username], async (err, row) => {
+        if (row) {
+            return res.status(400).json({ error: "userが既に存在します" });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        db.run("INSERT INTO users(username,password) VALUES(?,?)",
+            [username, hashedPassword],
+            function(err){
+                if(err) return res.status(500).json({ error: "Server Error" });
+                const token = jwt.sign({ username }, SECRET_KEY);
+                return res.status(201).json({ token });
+            }
+        );
+    });
+});
 //投稿一覧取得API
 app.get("/posts", (req, res) => {
     db.all("SELECT * FROM posts", (err, rows) => {
