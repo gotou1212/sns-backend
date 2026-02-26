@@ -12,42 +12,31 @@ const SECRET_KEY = "secret"
 
 //ルーティング
 //ログインAPI
-/*app.post("/login",(req,res) => {
-    const { username,password } = req.body;
-    console.log(username);
 
-        db.all("SELECT * FROM users WHERE username = ?", [username], async (err, rows) => {
-          if (rows.length == 0) {
-            return res.status(400)
-          }
-      
-          const user = rows[0];
-          console.log(user);
+     app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  console.log(username);
 
-          //トークン発行
-        });
-      });
-   
-    db.run("SELECT * FROM users WHERE username = ?",[username],async(err,row) => {
-        if(row){
-            return res.status(400).json({ error: "userが既に存在します"});
+  db.get("SELECT * FROM users WHERE username = ?", [username], async (err,user) => {
+    if (!user) {
+      return res.status(400).json({error:"パスワードが正しくありません。"});
+    }
+
+    //ログイン処理
+        const ispasswordvalid = await bcrypt.compare(password,10);
+       
+        if (!ispasswordvaild){
+            return res.status(400).json({ error: "パスワードが正しくありません。"})
         }
-
-        //const hashedpassword = await bcrypt.hash(password,10);
-        // 暗号化
-        const hashedPassword = await bcrypt.hash(password,10);
+       
+       
         console.log(hashedPassword);
-        // ユーザー登録
-        db.run("INSERT INTO users(username,password) VALUES(?,?)",[username,hashedPassword],async (err) => {
-            if (err) return res.status(500).json({ error: "Server Error"});
+       //トークン発行
+       const tokwn = jwt.sign({username}. SECRET_KEY);
             
-            //トークン発行
-            const token =jwt.sign({ username },SECRET_KEY);
-
-            return res.status(201).json({ token });
         });
     });
-    */
+    
 //ユーザー登録API
 app.post("/posts", async (req,res) => {
     const { username, password } = req.body;
