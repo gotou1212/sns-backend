@@ -28,9 +28,6 @@ const SECRET_KEY = "secret"
         if (!ispasswordvaild){
             return res.status(400).json({ error: "パスワードが正しくありません。"})
         }
-       
-       
-        console.log(hashedPassword);
        //トークン発行
        const tokwn = jwt.sign({username}. SECRET_KEY);
             
