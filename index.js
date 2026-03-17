@@ -13,27 +13,81 @@ const SECRET_KEY = "secret"
 //ルーティング
 //ログインAPI
 
-     app.post("/login", (req, res) => {
+app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  console.log(username);
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: "usernameとpasswordが必要です。" });
+  }
 
-  db.get("SELECT * FROM users WHERE username = ?", [username], async (err,user) => {
+  db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: "データベースエラー" });
+    }
+    
     if (!user) {
-      return res.status(400).json({error:"パスワードが正しくありません。"});
+      return res.status(400).json({ error: "ユーザーが見つかりません" });
     }
 
-    //ログイン処理
-        const ispasswordvalid = await bcrypt.compare(password,10);
-       
-        if (!ispasswordvaild){
-            return res.status(400).json({ error: "パスワードが正しくありません。"})
-        }
-       //トークン発行
-       const tokwn = jwt.sign({username}. SECRET_KEY);
-            
-        });
-    });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: "パスワードが正しくありません。" });
+    }
+    
+    const token = jwt.sign({ username }, SECRET_KEY);
+    return res.status(200).json({ token });
+  });
+});
+
+//ユーザー登録API
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: "usernameとpasswordが必要です。" });
+  }
+
+  db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: "データベースエラー" });
+    }
+    
+    if (user) {
+      return res.status(400).json({ error: "ユーザーが既に存在します" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    db.run("INSERT INTO users(username, password) VALUES(?, ?)", 
+      [username, hashedPassword], 
+      (err) => {
+        if (err) {
+          return res.status(500).json({ error: "ユーザー登録に失敗しました" });
+        }
+        return res.status(201).json({ message: "ユーザー登録が完了しました" });
+      }
+    );
+  });
+});
+
+// 認証ミドルウェア
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "tokenが必要です。" });
+  }
+  
+  const token = authHeader.split(" ")[1];
+  
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.username = decoded.username;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "tokenが無効です。" });
+  }
+}
 //投稿一覧取得API
 app.get("/posts", (req, res) => {
     db.all("SELECT * FROM posts", (err, rows) => {
