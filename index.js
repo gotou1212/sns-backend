@@ -1,14 +1,24 @@
 const express = require("express");
 const app = express();
-const port = 3000;
 const db = require("./db");
 const cors = require("cors");
-const jwt = require("jsonwebtoken")
-const bcrypt =require("bcrypt");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 app.use(express.json());
 app.use(cors());
 
-const SECRET_KEY = "secret"
+const port = Number(process.env.PORT) || 3000;
+const SECRET_KEY = process.env.JWT_SECRET || "dev_secret_change_me";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function parsePostId(idParam) {
+  const id = Number(idParam);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
 
 //ルーティング
 //ログインAPI
@@ -16,7 +26,7 @@ const SECRET_KEY = "secret"
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   
-  if (!username || !password) {
+  if (!isNonEmptyString(username) || !isNonEmptyString(password)) {
     return res.status(400).json({ error: "usernameとpasswordが必要です。" });
   }
 
@@ -29,14 +39,22 @@ app.post("/login", (req, res) => {
       return res.status(400).json({ error: "ユーザーが見つかりません" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    
-    if (!isPasswordValid) {
-      return res.status(400).json({ error: "パスワードが正しくありません。" });
+    try {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(400).json({ error: "パスワードが正しくありません。" });
+      }
+
+      const token = jwt.sign(
+        { userId: user.id, username: user.username },
+        SECRET_KEY,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      return res.status(200).json({ token });
+    } catch (authErr) {
+      return res.status(500).json({ error: "認証処理でエラーが発生しました" });
     }
-    
-    const token = jwt.sign({ username }, SECRET_KEY);
-    return res.status(200).json({ token });
   });
 });
 
@@ -44,7 +62,7 @@ app.post("/login", (req, res) => {
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   
-  if (!username || !password) {
+  if (!isNonEmptyString(username) || !isNonEmptyString(password)) {
     return res.status(400).json({ error: "usernameとpasswordが必要です。" });
   }
 
@@ -57,17 +75,22 @@ app.post("/register", async (req, res) => {
       return res.status(400).json({ error: "ユーザーが既に存在します" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    db.run("INSERT INTO users(username, password) VALUES(?, ?)", 
-      [username, hashedPassword], 
-      (err) => {
-        if (err) {
-          return res.status(500).json({ error: "ユーザー登録に失敗しました" });
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      db.run(
+        "INSERT INTO users(username, password) VALUES(?, ?)",
+        [username.trim(), hashedPassword],
+        (insertErr) => {
+          if (insertErr) {
+            return res.status(500).json({ error: "ユーザー登録に失敗しました" });
+          }
+          return res.status(201).json({ message: "ユーザー登録が完了しました" });
         }
-        return res.status(201).json({ message: "ユーザー登録が完了しました" });
-      }
-    );
+      );
+    } catch (hashErr) {
+      return res.status(500).json({ error: "パスワード処理でエラーが発生しました" });
+    }
   });
 });
 
@@ -78,7 +101,10 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: "tokenが必要です。" });
   }
   
-  const token = authHeader.split(" ")[1];
+  const [scheme, token] = authHeader.split(" ");
+  if (scheme !== "Bearer" || !token) {
+    return res.status(401).json({ error: "Bearer token形式で指定してください。" });
+  }
   
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
@@ -90,7 +116,7 @@ function authMiddleware(req, res, next) {
 }
 //投稿一覧取得API
 app.get("/posts", (req, res) => {
-    db.all("SELECT * FROM posts", (err, rows) => {
+    db.all("SELECT * FROM posts ORDER BY id DESC", (err, rows) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Internal Server Error" });
@@ -100,41 +126,78 @@ app.get("/posts", (req, res) => {
     });
 });
 
-app.post("/users", (req,res) => {
-    console.log("test");
-    db.run("INSERT INTO users(username) VALUES('satousan')",(err) => (
-        console.log(err)
-    ))
-});
 //投稿作成API
-app.post("/posts",(req,res)=> {
-   const { title,content } = req.body;
+app.post("/posts", authMiddleware, (req, res) => {
+  const { title, content } = req.body;
 
-    const createPostData = {
-        title: title,
-        content: content
+  if (!isNonEmptyString(title) || !isNonEmptyString(content)) {
+    return res.status(400).json({ error: "titleとcontentが必要です" });
+  }
+
+  db.run(
+    "INSERT INTO posts(title,content)VALUES(?,?)",
+    [title.trim(), content.trim()],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: "作成に失敗しました" });
+      }
+
+      return res.status(201).json({
+        message: "作成しました",
+        postId: this.lastID,
+      });
     }
-    db.run("INSERT INTO posts(title,content)VALUES(?,?)",[createPostData.title,createPostData.content],(err) => (
-        console.log(err)
-    ));
-//投稿削除API
-    res.json({
-        message: "作成しました"
-   });
+  );
 });
+  //投稿更新API
+  app.put("/posts/:id", authMiddleware, (req, res) => {
+    const postId = parsePostId(req.params.id);
+    const { title, content } = req.body;
+
+    if (!postId) {
+      return res.status(400).json({ error: "idが不正です" });
+    }
+
+    if (!isNonEmptyString(title) || !isNonEmptyString(content)) {
+      return res.status(400).json({ error: "titleとcontentが必要です" });
+    }
+
+    db.run("UPDATE posts SET title = ?, content = ? WHERE id = ?", [title.trim(), content.trim(), postId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: "更新に失敗しました" });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "投稿が見つかりません" });
+      }
+
+      return res.json({ message: "更新しました" });
+    });
+  });
 //投稿削除API
 //　posts/1
-app.delete("/posts/:id",(req,res) => {
-    const postId = req.params.id;
+app.delete("/posts/:id", authMiddleware, (req, res) => {
+    const postId = parsePostId(req.params.id);
 
-    db.run("DELETE FROM posts WHERE id = ?",[postId],(err) => {
-    })
+    if (!postId) {
+      return res.status(400).json({ error: "idが不正です" });
+    }
 
-    res.json({
+    db.run("DELETE FROM posts WHERE id = ?", [postId], function (err) {
+      if (err) {
+        return res.status(500).json({ error: "削除に失敗しました" });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "投稿が見つかりません" });
+      }
+
+      return res.json({
         message:"削除しました"
-    })
-})
+      });
+    });
+});
 //起動
 app.listen(port, () => {
-    console.log("start server");
-})
+    console.log(`start server on port ${port}`);
+});
