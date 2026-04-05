@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 app.use(express.json());
 app.use(cors());
-
+//TODO デプロイしたら許可リストを設定する
 const port = Number(process.env.PORT) || 3000;
 const SECRET_KEY = process.env.JWT_SECRET || "dev_secret_change_me";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
@@ -100,7 +100,7 @@ function authMiddleware(req, res, next) {
   if (!authHeader) {
     return res.status(401).json({ error: "tokenが必要です。" });
   }
-  
+  //403 認可エラー
   const [scheme, token] = authHeader.split(" ");
   if (scheme !== "Bearer" || !token) {
     return res.status(401).json({ error: "Bearer token形式で指定してください。" });
