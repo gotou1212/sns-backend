@@ -13,6 +13,8 @@ tags:
     description: Authentication and user registration
   - name: Posts
     description: Post CRUD operations
+  - name: Users
+    description: User profile operations
 
 paths:
   /login:
@@ -71,6 +73,45 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
         '400':
           description: Validation error or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by id
+      description: Returns a user's public profile by user id.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: User id
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
           content:
             application/json:
               schema:
@@ -277,6 +318,16 @@ components:
         content:
           type: string
       additionalProperties: true
+
+    User:
+      type: object
+      required: [id, username]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        username:
+          type: string
 
     PostUpsertRequest:
       type: object

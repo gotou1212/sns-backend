@@ -15,8 +15,14 @@ function parsePostId(idParam) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+function parseUserId(idParam) {
+  const id = Number(idParam);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 module.exports = {
   authSchema,
   postSchema,
   parsePostId,
+  parseUserId,
 };
