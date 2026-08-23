@@ -46,6 +46,116 @@ router.get("/users/me", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/users/:userId/follow-summary", authMiddleware, async (req, res) => {
+  const targetUserId = parseUserId(req.params.userId);
+
+  if (!targetUserId) {
+    return res.status(400).json({ error: "idが不正です" });
+  }
+
+  try {
+    const targetUser = await db.getAsync("SELECT id FROM users WHERE id = ?", [targetUserId]);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "ユーザーが見つかりません" });
+    }
+
+    const [followersCountRow, followingCountRow, isFollowingRow] = await Promise.all([
+      db.getAsync("SELECT COUNT(*) AS count FROM follows WHERE followee_id = ?", [targetUserId]),
+      db.getAsync("SELECT COUNT(*) AS count FROM follows WHERE follower_id = ?", [targetUserId]),
+      db.getAsync(
+        "SELECT 1 AS found FROM follows WHERE follower_id = ? AND followee_id = ?",
+        [req.user.userId, targetUserId]
+      ),
+    ]);
+
+    return res.json({
+      userId: targetUserId,
+      followersCount: Number(followersCountRow?.count || 0),
+      followingCount: Number(followingCountRow?.count || 0),
+      isFollowing: Boolean(isFollowingRow),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "フォロー情報取得に失敗しました" });
+  }
+});
+
+router.post("/users/:userId/follow", authMiddleware, async (req, res) => {
+  const targetUserId = parseUserId(req.params.userId);
+
+  if (!targetUserId) {
+    return res.status(400).json({ error: "idが不正です" });
+  }
+
+  if (targetUserId === req.user.userId) {
+    return res.status(400).json({ error: "自分自身をフォローすることはできません" });
+  }
+
+  try {
+    const targetUser = await db.getAsync("SELECT id FROM users WHERE id = ?", [targetUserId]);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "ユーザーが見つかりません" });
+    }
+
+    await db.runAsync(
+      "INSERT OR IGNORE INTO follows(follower_id, followee_id) VALUES(?, ?)",
+      [req.user.userId, targetUserId]
+    );
+
+    const followersCountRow = await db.getAsync(
+      "SELECT COUNT(*) AS count FROM follows WHERE followee_id = ?",
+      [targetUserId]
+    );
+
+    return res.json({
+      ok: true,
+      isFollowing: true,
+      followersCount: Number(followersCountRow?.count || 0),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "フォローに失敗しました" });
+  }
+});
+
+router.delete("/users/:userId/follow", authMiddleware, async (req, res) => {
+  const targetUserId = parseUserId(req.params.userId);
+
+  if (!targetUserId) {
+    return res.status(400).json({ error: "idが不正です" });
+  }
+
+  if (targetUserId === req.user.userId) {
+    return res.status(400).json({ error: "自分自身のフォローを解除することはできません" });
+  }
+
+  try {
+    const targetUser = await db.getAsync("SELECT id FROM users WHERE id = ?", [targetUserId]);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "ユーザーが見つかりません" });
+    }
+
+    await db.runAsync(
+      "DELETE FROM follows WHERE follower_id = ? AND followee_id = ?",
+      [req.user.userId, targetUserId]
+    );
+
+    const followersCountRow = await db.getAsync(
+      "SELECT COUNT(*) AS count FROM follows WHERE followee_id = ?",
+      [targetUserId]
+    );
+
+    return res.json({
+      ok: true,
+      isFollowing: false,
+      followersCount: Number(followersCountRow?.count || 0),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "フォロー解除に失敗しました" });
+  }
+});
+
 router.get("/users/:id", async (req, res) => {
   const userId = parseUserId(req.params.id);
 

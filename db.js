@@ -30,6 +30,24 @@ const CREATE_UNIQUE_USERNAME_INDEX = `
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 `;
 
+const CREATE_FOLLOWS_TABLE = `
+CREATE TABLE IF NOT EXISTS follows(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  follower_id INTEGER NOT NULL,
+  followee_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(follower_id, followee_id),
+  CHECK(follower_id <> followee_id),
+  FOREIGN KEY (follower_id) REFERENCES users(id),
+  FOREIGN KEY (followee_id) REFERENCES users(id)
+);
+`;
+
+const CREATE_FOLLOW_INDEXES = `
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_followee_id ON follows(followee_id);
+`;
+
 function ensurePostColumns() {
   db.all("PRAGMA table_info(posts)", (err, columns) => {
     if (err) {
@@ -48,6 +66,8 @@ db.serialize(() => {
   db.run(CREATE_POSTS_TABLE);
   db.run(CREATE_USERS_TABLE);
   db.run(CREATE_UNIQUE_USERNAME_INDEX);
+  db.run(CREATE_FOLLOWS_TABLE);
+  db.run(CREATE_FOLLOW_INDEXES);
   ensurePostColumns();
 });
 

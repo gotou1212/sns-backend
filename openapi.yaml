@@ -123,6 +123,145 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /users/{userId}/follow-summary:
+    get:
+      tags: [Users]
+      summary: Get follow summary for a user
+      description: Returns follow counts and current user's follow state for the profile user.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          description: Profile user id
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowSummary'
+        '400':
+          description: Invalid userId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/follow:
+    post:
+      tags: [Users]
+      summary: Follow a user
+      description: Follows the target user. Idempotent and requires bearer authentication.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          description: User id to follow
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Follow action result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowActionResponse'
+        '400':
+          description: Invalid userId or self-follow is prohibited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Users]
+      summary: Unfollow a user
+      description: Unfollows the target user. Idempotent and requires bearer authentication.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          description: User id to unfollow
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Unfollow action result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowActionResponse'
+        '400':
+          description: Invalid userId or self-unfollow is prohibited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /posts:
     get:
       tags: [Posts]
@@ -346,6 +485,34 @@ components:
       properties:
         message:
           type: string
+
+    FollowSummary:
+      type: object
+      required: [userId, followersCount, followingCount, isFollowing]
+      properties:
+        userId:
+          type: integer
+          minimum: 1
+        followersCount:
+          type: integer
+          minimum: 0
+        followingCount:
+          type: integer
+          minimum: 0
+        isFollowing:
+          type: boolean
+
+    FollowActionResponse:
+      type: object
+      required: [ok, isFollowing, followersCount]
+      properties:
+        ok:
+          type: boolean
+        isFollowing:
+          type: boolean
+        followersCount:
+          type: integer
+          minimum: 0
 
     ErrorResponse:
       type: object
