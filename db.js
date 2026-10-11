@@ -7,7 +7,7 @@ const INITIALIZE_SQL = `
 CREATE TABLE IF NOT EXISTS test (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   text TEXT
-);`;
+);`
 
 const CREATE_POSTS_TABLE = `
 CREATE TABLE IF NOT EXISTS posts(
@@ -48,6 +48,23 @@ CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
 CREATE INDEX IF NOT EXISTS idx_follows_followee_id ON follows(followee_id);
 `;
 
+const CREATE_LIKES_TABLE = `
+CREATE TABLE IF NOT EXISTS likes(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  post_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, post_id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+);
+`;
+
+const CREATE_LIKE_INDEXES = `
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id);
+`;
+
 function ensurePostColumns() {
   db.all("PRAGMA table_info(posts)", (err, columns) => {
     if (err) {
@@ -68,6 +85,8 @@ db.serialize(() => {
   db.run(CREATE_UNIQUE_USERNAME_INDEX);
   db.run(CREATE_FOLLOWS_TABLE);
   db.run(CREATE_FOLLOW_INDEXES);
+  db.run(CREATE_LIKES_TABLE);
+  db.run(CREATE_LIKE_INDEXES);
   ensurePostColumns();
 });
 
