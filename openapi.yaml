@@ -427,6 +427,145 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /posts/{postId}/like-summary:
+    get:
+      tags: [Posts]
+      summary: Get like summary for a post
+      description: Returns the like count and current user's like state for the post.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          description: Post id
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeSummary'
+        '400':
+          description: Invalid postId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /posts/{postId}/like:
+    post:
+      tags: [Posts]
+      summary: Like a post
+      description: Likes the target post. Idempotent and requires bearer authentication. Liking your own post is allowed.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          description: Post id to like
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Like action result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeActionResponse'
+        '400':
+          description: Invalid postId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Posts]
+      summary: Unlike a post
+      description: Removes the current user's like from the target post. Idempotent and requires bearer authentication.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          description: Post id to unlike
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Unlike action result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeActionResponse'
+        '400':
+          description: Invalid postId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -511,6 +650,31 @@ components:
         isFollowing:
           type: boolean
         followersCount:
+          type: integer
+          minimum: 0
+
+    LikeSummary:
+      type: object
+      required: [postId, likesCount, isLiked]
+      properties:
+        postId:
+          type: integer
+          minimum: 1
+        likesCount:
+          type: integer
+          minimum: 0
+        isLiked:
+          type: boolean
+
+    LikeActionResponse:
+      type: object
+      required: [ok, isLiked, likesCount]
+      properties:
+        ok:
+          type: boolean
+        isLiked:
+          type: boolean
+        likesCount:
           type: integer
           minimum: 0
 

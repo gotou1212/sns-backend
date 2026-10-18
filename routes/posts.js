@@ -95,4 +95,104 @@ router.delete("/posts/:id", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/posts/:postId/like", authMiddleware, async (req, res) => {
+  const postId = parsePostId(req.params.postId);
+  // バリデーション（検証）＝値が不正値ではないですよねっていうことを確認するための行為
+  if (!postId) {
+    return res.status(400).json({ error: "idが不正です" });
+  }
+
+  try {
+    const post = await db.getAsync("SELECT id FROM posts WHERE id = ?", [postId]);
+
+    if (!post) {
+      return res.status(404).json({ error: "投稿が見つかりません" });
+    }
+
+    await db.runAsync(
+      "INSERT OR IGNORE INTO likes(user_id, post_id) VALUES(?, ?)",
+      [req.user.userId, postId]
+    );
+
+    const likesCountRow = await db.getAsync(
+      "SELECT COUNT(*) AS count FROM likes WHERE post_id = ?",
+      [postId]
+    );
+
+    return res.json({
+      ok: true,
+      isLiked: true,
+      likesCount: Number(likesCountRow?.count || 0),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "いいねに失敗しました" });
+  }
+});
+
+router.delete("/posts/:postId/like", authMiddleware, async (req, res) => {
+  const postId = parsePostId(req.params.postId);
+
+  if (!postId) {
+    return res.status(400).json({ error: "idが不正です" });
+  }
+
+  try {
+    const post = await db.getAsync("SELECT id FROM posts WHERE id = ?", [postId]);
+
+    if (!post) {
+      return res.status(404).json({ error: "投稿が見つかりません" });
+    }
+
+    await db.runAsync(
+      "DELETE FROM likes WHERE user_id = ? AND post_id = ?",
+      [req.user.userId, postId]
+    );
+
+    const likesCountRow = await db.getAsync(
+      "SELECT COUNT(*) AS count FROM likes WHERE post_id = ?",
+      [postId]
+    );
+
+    return res.json({
+      ok: true,
+      isLiked: false,
+      likesCount: Number(likesCountRow?.count || 0),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "いいね解除に失敗しました" });
+  }
+});
+
+router.get("/posts/:postId/like-summary", authMiddleware, async (req, res) => {
+  const postId = parsePostId(req.params.postId);
+
+  if (!postId) {
+    return res.status(400).json({ error: "idが不正です" });
+  }
+
+  try {
+    const post = await db.getAsync("SELECT id FROM posts WHERE id = ?", [postId]);
+
+    if (!post) {
+      return res.status(404).json({ error: "投稿が見つかりません" });
+    }
+
+    const [likesCountRow, isLikedRow] = await Promise.all([
+      db.getAsync("SELECT COUNT(*) AS count FROM likes WHERE post_id = ?", [postId]),
+      db.getAsync(
+        "SELECT 1 AS found FROM likes WHERE user_id = ? AND post_id = ?",
+        [req.user.userId, postId]
+      ),
+    ]);
+
+    return res.json({
+      postId,
+      likesCount: Number(likesCountRow?.count || 0),
+      isLiked: Boolean(isLikedRow),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "いいね情報取得に失敗しました" });
+  }
+});
+
 module.exports = router;

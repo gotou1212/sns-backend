@@ -1,0 +1,5 @@
+APIの作り方
+routerを用意する
+method＋
+routerの中身を実装する
+フロントと連携する
